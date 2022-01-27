@@ -17,13 +17,17 @@ This dataset is composed of sagittal images of the lumbar spinal cord with T2w c
 # Getting started
 
 ## Dependencies
-- [SCT](https://github.com/ivadomed/model_seg_sci/blob/main/preprocessing/preprocess_data.sh) commit: git-master-7c4f081a0cb566fd8f4702a7e0f8b43bcb02b412 
+- [SCT](https://github.com/ivadomed/model_seg_sci/blob/main/preprocessing/preprocess_data.sh) commit: git-master-7c4f081a0cb566fd8f4702a7e0f8b43bcb02b412
 - [ivadomed](https://ivadomed.org) commit:
 
 ## Preprocess the data
 The data need to be preprocessed before training. This step will crop the input images to the region-of-interest (i.e. lumbar spinal cord) for subsequent segmentation. To run the preprocessing step, please run the following command:
 
+  ```
   sct_run_batch -script <PATH_TO_REPOSITORY>/preprocess/preprocess_data.sh -path-data <PATH_TO_DATA>/lumbar_epfl/ -path-output <PATH_OUTPUTS>/lumbar_epfl_preprocessed -jobs <JOBS>
+  ```
 
 Where:
 - `<JOBS>`: Number of CPU cores to use (we recommend not using more than half the number of available cores.)
+
+## Quality control
