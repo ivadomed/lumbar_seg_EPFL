@@ -8,7 +8,7 @@ Here, we aim to train a lumbar spinal cord segmentation model on these MRI image
 
 ## Model overview
 
-![Model Overview](https://imgur.com/a/lilkjGH)
+![Model Overview](/misc/example.png)
 
 ## Data
 This dataset was shared by Nawal Kinany <nawal.kinany@epfl.ch> and Dimitry Van De Ville <dimitri.vandevill@epfl.ch>, from EPFL.
