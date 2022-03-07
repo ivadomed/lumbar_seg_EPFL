@@ -8,17 +8,12 @@
 # Usage:
 # sct_run_batch -script preprocess_data.sh -path-data <PATH-TO-DATASET> -path-output <PATH-TO-OUTPUT> -jobs <num-cpu-cores>
 
-# Manual segmentations or labels should be located under:
-# PATH_DATA/derivatives/labels/SUBJECT/anat/
-
 # The following global variables are retrieved from the caller sct_run_batch
 # but could be overwritten by uncommenting the lines below:
 # PATH_DATA_PROCESSED="~/data_processed"
 # PATH_RESULTS="~/results"
 # PATH_LOG="~/log"
 # PATH_QC="~/qc"
-
-# Global variables
 
 # Uncomment for full verbose
 set -x
@@ -43,7 +38,7 @@ get_centerline() {
   # Update global variable with segmentation file name
   FILESEG="${file}_centerline"
   # Get centerline of spinal cord
-  sct_get_centerline -i ${file}.nii.gz -c $contrast
+  sct_get_centerline -i ${file}.nii.gz -c $contrast -qc ${PATH_QC} -qc-subject ${SUBJECT}
 }
 
 # Retrieve input params and other params
@@ -79,10 +74,6 @@ fi
 # Note: we use '/./' in order to include the sub-folder 'ses-0X'
 rsync -Ravzh $PATH_DATA/./$SUBJECT .
 
-# Copy segmentation ground truths (GT)
-mkdir -p derivatives/labels
-rsync -Ravzh $PATH_DATA/derivatives/labels/./$SUBJECT derivatives/labels/.
-
 # Go to subject folder for source images
 cd ${SUBJECT}/anat
 
@@ -112,30 +103,10 @@ sct_crop_image -i ${file}.nii.gz -m mask_${file}.nii.gz -o ${file}_crop.nii.gz
 # Isotropic 0.5mm resampling
 sct_resample -i ${file}_crop.nii.gz -mm 0.5x0.5x0.5 -o ${file}_crop_resampled.nii.gz
 
-# Go to subject folder for segmentation GTs
-cd $PATH_DATA_PROCESSED/derivatives/labels/$SUBJECT/anat
-
-# Define variables
-file_gt="${file}_seg-manual"
-
-# Copy masks
-rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/mask_${file}.nii.gz $PATH_DATA_PROCESSED/derivatives/labels/$SUBJECT/anat/mask_${file}.nii.gz
-
-# Crop GT
-sct_crop_image -i ${file_gt}.nii.gz -m mask_${file}.nii.gz -o ${file_gt}_crop.nii.gz
-
-# Isotropic 0.5mm resampling of mask
-sct_resample -i ${file_gt}_crop.nii.gz -mm 0.5x0.5x0.5 -o ${file_gt}_crop_resampled.nii.gz
-
-# Make sure the first rater metadata is a valid JSON object
-if [[ ! -s ${file_gt}.json ]]; then
-  echo "{}" >> ${file_gt}.json
-fi
-
 # Go back to the root output path
 cd $PATH_OUTPUT
 
-# Create and populate clean data processed folder for training
+# Create and populate clean data processed folder to remove clutter
 PATH_DATA_PROCESSED_CLEAN="${PATH_DATA_PROCESSED}_clean"
 
 # Copy over required BIDs files
@@ -143,14 +114,10 @@ mkdir -p $PATH_DATA_PROCESSED_CLEAN $PATH_DATA_PROCESSED_CLEAN/${SUBJECT} $PATH_
 rsync -avzh $PATH_DATA_PROCESSED/dataset_description.json $PATH_DATA_PROCESSED_CLEAN/
 rsync -avzh $PATH_DATA_PROCESSED/participants.* $PATH_DATA_PROCESSED_CLEAN/
 rsync -avzh $PATH_DATA_PROCESSED/README.* $PATH_DATA_PROCESSED_CLEAN/
-rsync -avzh $PATH_DATA_PROCESSED/dataset_description.json $PATH_DATA_PROCESSED_CLEAN/derivatives/
 
-# Copy resampled crops as inputs and lumbar cord annotations as targets
+# Copy resampled crops to use as inputs and lumbar cord annotations as targets
 rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/${file}_crop_resampled.nii.gz $PATH_DATA_PROCESSED_CLEAN/${SUBJECT}/anat/${file}.nii.gz
 rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/${file}.json $PATH_DATA_PROCESSED_CLEAN/${SUBJECT}/anat/${file}.json
-mkdir -p $PATH_DATA_PROCESSED_CLEAN/derivatives $PATH_DATA_PROCESSED_CLEAN/derivatives/labels $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT} $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/
-rsync -avzh $PATH_DATA_PROCESSED/derivatives/labels/${SUBJECT}/anat/${file_gt}_crop_resampled.nii.gz $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/${file_gt}.nii.gz
-rsync -avzh $PATH_DATA_PROCESSED/derivatives/labels/${SUBJECT}/anat/${file_gt}.json $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/${file_gt}.json
 
 end=`date +%s`
 runtime=$((end-start))

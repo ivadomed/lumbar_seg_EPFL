@@ -19,6 +19,8 @@
 # PATH_QC="~/qc"
 
 # Global variables
+CENTERLINE_METHOD="svm"  # method sct_deepseg_sc uses for extracting the centerline: 'svm', 'cnn'
+
 
 # Uncomment for full verbose
 set -x
@@ -33,17 +35,37 @@ trap "echo Caught Keyboard Interrupt within script. Exiting now.; exit" INT
 # CONVENIENCE FUNCTIONS
 # ======================================================================================================================
 
-get_centerline() {
+segment_if_does_not_exist() {
   ###
-  # This function returns the output of the sct_get_centerline function applied to a scan
+  #  This function checks if a manual spinal cord segmentation file already exists, then:
+  #    - If it does, copy it locally.
+  #    - If it doesn't, perform automatic spinal cord segmentation.
+  #  This allows you to add manual segmentations on a subject-by-subject basis without disrupting the pipeline.
   ###
-
   local file="$1"
   local contrast="$2"
+  local centerline_method="$3"
   # Update global variable with segmentation file name
-  FILESEG="${file}_centerline"
-  # Get centerline of spinal cord
-  sct_get_centerline -i ${file}.nii.gz -c $contrast
+  FILESEG="${file}_seg"
+  FILESEGMANUAL="${PATH_DATA}/derivatives/labels/${SUBJECT}/anat/${FILESEG}-manual.nii.gz"
+  echo
+  echo "Looking for manual segmentation: $FILESEGMANUAL"
+  if [[ -e $FILESEGMANUAL ]]; then
+    echo "Found! Using manual segmentation."
+    rsync -avzh $FILESEGMANUAL ${FILESEG}.nii.gz
+    sct_qc -i ${file}.nii.gz -s ${FILESEG}.nii.gz -p sct_deepseg_sc -qc ${PATH_QC} -qc-subject ${SUBJECT}
+  else
+    echo "Not found. Proceeding with automatic segmentation."
+    # Segment spinal cord based on the specified centerline method
+    if [[ $centerline_method == "cnn" ]]; then
+      sct_deepseg_sc -i ${file}.nii.gz -c $contrast -brain 1 -centerline cnn -qc ${PATH_QC} -qc-subject ${SUBJECT}
+    elif [[ $centerline_method == "svm" ]]; then
+      sct_deepseg_sc -i ${file}.nii.gz -c $contrast -centerline svm -qc ${PATH_QC} -qc-subject ${SUBJECT}
+    else
+      echo "Centerline extraction method = ${centerline_method} is not recognized!"
+      exit 1
+    fi
+  fi
 }
 
 # Retrieve input params and other params
@@ -99,18 +121,15 @@ if [[ ! -s ${file}.json ]]; then
   echo "{}" >> ${file}.json
 fi
 
-# Centerline extraction using the T2w contrast
-get_centerline ${file} t2
+# Spinal cord segmentation using the T2w contrast
+segment_if_does_not_exist ${file} t2 ${CENTERLINE_METHOD}
 file_seg="${FILESEG}"
 
-# Create mask spinal cord mask
-sct_create_mask -i ${file}.nii.gz -p centerline,${file_seg}.nii.gz
+# Dilate spinal cord mask
+sct_maths -i ${file_seg}.nii.gz -dilate 5 -shape ball -o ${file_seg}_dilate.nii.gz
 
-# Use mask to crop the original image 
-sct_crop_image -i ${file}.nii.gz -m mask_${file}.nii.gz -o ${file}_crop.nii.gz
-
-# Isotropic 0.5mm resampling
-sct_resample -i ${file}_crop.nii.gz -mm 0.5x0.5x0.5 -o ${file}_crop_resampled.nii.gz
+# Use dilated mask to crop the original image and manual MS segmentations
+sct_crop_image -i ${file}.nii.gz -m ${file_seg}_dilate.nii.gz -o ${file}_crop.nii.gz
 
 # Go to subject folder for segmentation GTs
 cd $PATH_DATA_PROCESSED/derivatives/labels/$SUBJECT/anat
@@ -118,19 +137,16 @@ cd $PATH_DATA_PROCESSED/derivatives/labels/$SUBJECT/anat
 # Define variables
 file_gt="${file}_seg-manual"
 
-# Copy masks
-rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/mask_${file}.nii.gz $PATH_DATA_PROCESSED/derivatives/labels/$SUBJECT/anat/mask_${file}.nii.gz
-
-# Crop GT
-sct_crop_image -i ${file_gt}.nii.gz -m mask_${file}.nii.gz -o ${file_gt}_crop.nii.gz
-
-# Isotropic 0.5mm resampling of mask
-sct_resample -i ${file_gt}_crop.nii.gz -mm 0.5x0.5x0.5 -o ${file_gt}_crop_resampled.nii.gz
+# Redefine variable for final SC segmentation mask as path changed
+file_seg_dil=${PATH_DATA_PROCESSED}/${SUBJECT}/anat/${file_seg}_dilate
 
 # Make sure the first rater metadata is a valid JSON object
 if [[ ! -s ${file_gt}.json ]]; then
   echo "{}" >> ${file_gt}.json
 fi
+
+# Crop the manual seg
+sct_crop_image -i ${file_gt}.nii.gz -m ${file_seg_dil}.nii.gz -o ${file_gt}_crop.nii.gz
 
 # Go back to the root output path
 cd $PATH_OUTPUT
@@ -145,13 +161,14 @@ rsync -avzh $PATH_DATA_PROCESSED/participants.* $PATH_DATA_PROCESSED_CLEAN/
 rsync -avzh $PATH_DATA_PROCESSED/README.* $PATH_DATA_PROCESSED_CLEAN/
 rsync -avzh $PATH_DATA_PROCESSED/dataset_description.json $PATH_DATA_PROCESSED_CLEAN/derivatives/
 
-# Copy resampled crops as inputs and lumbar cord annotations as targets
-rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/${file}_crop_resampled.nii.gz $PATH_DATA_PROCESSED_CLEAN/${SUBJECT}/anat/${file}.nii.gz
+# For lumbar cord segmentation task, copy SC crops as inputs and lumbar cord annotations as targets
+rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/${file}_crop.nii.gz $PATH_DATA_PROCESSED_CLEAN/${SUBJECT}/anat/${file}.nii.gz
 rsync -avzh $PATH_DATA_PROCESSED/${SUBJECT}/anat/${file}.json $PATH_DATA_PROCESSED_CLEAN/${SUBJECT}/anat/${file}.json
 mkdir -p $PATH_DATA_PROCESSED_CLEAN/derivatives $PATH_DATA_PROCESSED_CLEAN/derivatives/labels $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT} $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/
-rsync -avzh $PATH_DATA_PROCESSED/derivatives/labels/${SUBJECT}/anat/${file_gt}_crop_resampled.nii.gz $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/${file_gt}.nii.gz
+rsync -avzh $PATH_DATA_PROCESSED/derivatives/labels/${SUBJECT}/anat/${file_gt}_crop.nii.gz $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/${file_gt}.nii.gz
 rsync -avzh $PATH_DATA_PROCESSED/derivatives/labels/${SUBJECT}/anat/${file_gt}.json $PATH_DATA_PROCESSED_CLEAN/derivatives/labels/${SUBJECT}/anat/${file_gt}.json
 
+# Display useful info for the log
 end=`date +%s`
 runtime=$((end-start))
 echo
