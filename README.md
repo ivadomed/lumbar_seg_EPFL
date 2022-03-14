@@ -13,6 +13,9 @@ Here, we aim to train a lumbar spinal cord segmentation model on these MRI image
 ## Data
 This dataset was shared by Nawal Kinany <nawal.kinany@epfl.ch> and Dimitry Van De Ville <dimitri.vandevill@epfl.ch>, from EPFL.
 
+## Access to the data
+git@data.neuro.polymtl.ca:datasets/lumbar-epfl
+
 This dataset is composed of sagittal images of the lumbar spinal cord with T2w contrast.
 
 # Getting started
