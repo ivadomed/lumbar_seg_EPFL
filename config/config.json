@@ -1,7 +1,7 @@
 {
     "command": "train",
-    "gpu_ids": [0],
-    "path_output": "/Users/aramsevagavarian/Projet/epfl-output-np",
+    "gpu_ids": [6],
+    "path_output": "/home/GRAMES.POLYMTL.CA/arava/duke/temp/aram/project-lumbar/output_test",
     "model_name": "EPFL-lumbar-seg",
     "debugging": false,
     "object_detection_params": {
@@ -9,7 +9,7 @@
         "safety_factor": [1.0, 1.0, 1.0]
     },
     "loader_parameters": {
-        "path_data": ["/Users/aramsevagavarian/Projet/lumbar-dataset-epfl"],
+        "path_data": ["/home/GRAMES.POLYMTL.CA/arava/duke/temp/aram/project-lumbar/data"],
         "subject_selection": {"n": [], "metadata": [], "value": []},
         "target_suffix": ["_seg-manual"],
         "extensions": [".nii.gz"],
@@ -40,12 +40,12 @@
         "test_fraction": 0.20
     },
     "training_parameters": {
-        "batch_size": 10,
+        "batch_size": 1,
         "loss": {
             "name": "DiceLoss"
         },
         "training_time": {
-            "num_epochs": 10,
+            "num_epochs": 100,
             "early_stopping_patience": 50,
             "early_stopping_epsilon": 0.001
         },
@@ -81,9 +81,9 @@
         "film_layers": [0, 1, 0, 0, 0, 0, 0, 0, 0, 0]
     },
     "Modified3DUNet": {
-        "applied": false,
-        "length_3D": [128, 128, 16],
-        "stride_3D": [128, 128, 16],
+        "applied": true,
+        "length_3D": [48,384,640],
+        "stride_3D": [48,384,640],
         "attention": false,
         "n_filters": 8
     },
@@ -107,12 +107,12 @@
     "transformation": {
         "Resample":
         {
-            "hspace": 0.75,
-            "wspace": 0.75,
-            "dspace": 1
+            "hspace": 0.5,
+            "wspace": 0.5,
+            "dspace": 0.5
         },
         "CenterCrop": {
-            "size": [128, 128]},
+            "size": [48,384,640]},
         "RandomAffine": {
             "degrees": 5,
             "scale": [0.1, 0.1],
