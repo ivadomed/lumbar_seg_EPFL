@@ -1,6 +1,6 @@
 {
     "command": "train",
-    "gpu_ids": [6],
+    "gpu_ids": [1],
     "path_output": "/home/GRAMES.POLYMTL.CA/arava/duke/temp/aram/project-lumbar/output_test",
     "model_name": "EPFL-lumbar-seg",
     "debugging": false,
@@ -9,7 +9,7 @@
         "safety_factor": [1.0, 1.0, 1.0]
     },
     "loader_parameters": {
-        "path_data": ["/home/GRAMES.POLYMTL.CA/arava/duke/temp/aram/project-lumbar/data"],
+        "path_data": ["/home/GRAMES.POLYMTL.CA/arava/duke/temp/aram/project-lumbar/data_processed_clean"],
         "subject_selection": {"n": [], "metadata": [], "value": []},
         "target_suffix": ["_seg-manual"],
         "extensions": [".nii.gz"],
@@ -32,7 +32,7 @@
     },
     "split_dataset": {
         "fname_split": null,
-        "random_seed": 6,
+        "random_seed": 3,
         "split_method" : "participant_id",
         "data_testing": {"data_type": null, "data_value":[]},
         "balance": null,
@@ -82,8 +82,8 @@
     },
     "Modified3DUNet": {
         "applied": true,
-        "length_3D": [48,384,640],
-        "stride_3D": [48,384,640],
+        "length_3D": [96, 304, 512],
+        "stride_3D": [96, 304, 512],
         "attention": false,
         "n_filters": 8
     },
@@ -112,11 +112,11 @@
             "dspace": 0.5
         },
         "CenterCrop": {
-            "size": [48,384,640]},
+            "size": [96, 304, 512]},
         "RandomAffine": {
-            "degrees": 5,
-            "scale": [0.1, 0.1],
-            "translate": [0.03, 0.03],
+            "degrees": 10,
+            "scale": [0.1, 0.1, 0.1],
+            "translate": [0.03, 0.03, 0.03],
             "applied_to": ["im", "gt"],
             "dataset_type": ["training"]
         },
@@ -127,6 +127,28 @@
             "applied_to": ["im", "gt"],
             "dataset_type": ["training"]
         },
-      "NormalizeInstance": {"applied_to": ["im"]}
+      "NormalizeInstance": {"applied_to": ["im"]
+        },
+         "NumpyToTensor": { "applied_to": ["im", "gt"]
+        },
+        "RandomGamma": {
+            "log_gamma_range": [-1.5, 1.5],
+            "p": 0.5,
+            "applied_to": ["im"],
+            "dataset_type": ["training"]
+        },
+        "RandomBiasField": {
+            "coefficients": 0.5,
+            "order": 3,
+            "p": 0.3,
+            "applied_to": ["im"],
+            "dataset_type": ["training"]
+        },
+        "RandomBlur": {
+            "sigma_range": [0.0, 1.0],
+            "p": 0.3,
+            "applied_to": ["im"],
+            "dataset_type": ["training"]
+        }
     }
 }
