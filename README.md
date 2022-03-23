@@ -34,11 +34,7 @@ The data need to be preprocessed before training. This step will crop the input 
 Where:
 - `<JOBS>`: Number of CPU cores to use (we recommend not using more than half the number of available cores.)
 
-## Quality control
-
 ## Training
-Prior to executing the training task, a key/value pair needs to be added in data_preprocessed_clean/derivatives/dataset_description.json to describe the pipeline. Adding a filler line like ```"PipelineDescription": {"Name": "Pipeline"}``` is sufficient.
-
 The training task is carried out using the clean preprocessed dataset using the command
   ```
   ivadomed --train -c config.json --path-data path/to/bids/data --path-output path/to/output/directory
