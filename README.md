@@ -16,8 +16,6 @@ This dataset was shared by Nawal Kinany <nawal.kinany@epfl.ch> and Dimitry Van D
 ## Access to the data
 git@data.neuro.polymtl.ca:datasets/lumbar-epfl
 
-This dataset is composed of sagittal images of the lumbar spinal cord with T2w contrast.
-
 # Getting started
 
 ## Dependencies
