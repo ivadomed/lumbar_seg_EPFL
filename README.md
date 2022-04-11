@@ -6,6 +6,9 @@ Sciatica or hernias in the lumbar spinal cord can cause severe chronic pain. Res
 
 Here, we aim to train a lumbar spinal cord segmentation model on these MRI images and make the model accessible via open-source software to enable global use.
 
+## Model overview
+![overview](https://github.com/ivadomed/lumbar_seg_EPFL/releases/download/r20220411/model_overview.png)
+
 ## Data
 This dataset was shared by Nawal Kinany <nawal.kinany@epfl.ch> and Dimitry Van De Ville <dimitri.vandevill@epfl.ch>, from EPFL.
 
