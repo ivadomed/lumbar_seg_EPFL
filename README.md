@@ -15,6 +15,7 @@ This dataset was shared by Nawal Kinany <nawal.kinany@epfl.ch> and Dimitry Van D
 This dataset contains images of the lumbar spinal cord with T2w contrast.
 
 ## Access to the data
+(internal)
 git@data.neuro.polymtl.ca:datasets/lumbar-epfl
 
 # Getting started
